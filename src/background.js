@@ -3,18 +3,52 @@
 import { app, protocol, BrowserWindow } from 'electron'
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
+import { autoUpdater } from 'electron-updater'
+import path from 'path'
 const isDevelopment = process.env.NODE_ENV !== 'production'
+
+let win
+let actualizacion
 
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { secure: true, standard: true } }
 ])
 
+function buscarActualizacion(){
+  //console.log('buscando....')
+  autoUpdater.checkForUpdates()
+  autoUpdater.on('update-downloaded', () => {
+
+    setTimeout(()=>{ // ESPERA 10 SEGUNDOS PARA ENVIAR EL MENSAJE DE QUE DEBE SER ACTUALIZADA LA APP
+      win.webContents.send('actualizacion', true)
+    }, 10000)
+
+    clearInterval(actualizacion) // al momento de descargar la actualizacion detiene el ciclo de busqueda
+
+   
+    // const dialogOpts = {
+    //   type: 'info',
+    //   buttons: ['Actualizar', 'Después'],
+    //   title: 'Actualización disponible',
+    //   message: `NUEVA VERSION DISPONIBLE`,
+    //   detail: 'Una nueva versión ha sido descargada. Presiona "Actualizar" para aplicar los cambios.'
+    // }
+
+    // dialog.showMessageBox(dialogOpts).then(({ response }) => {
+    //   if (response === 0) autoUpdater.quitAndInstall()
+    // })
+  })
+}
+
+
 async function createWindow() {
   // Create the browser window.
-  const win = new BrowserWindow({
-    width: 800,
-    height: 600,
+  win = new BrowserWindow({
+    width: 1240,
+    height: 850,
+    center:true,
+    autoHideMenuBar: true,
     webPreferences: {
       
       // Use pluginOptions.nodeIntegration, leave this alone
@@ -33,6 +67,8 @@ async function createWindow() {
     // Load the index.html when not in development
     win.loadURL('app://./index.html')
   }
+
+  actualizacion = setInterval(buscarActualizacion, 10 * 60 * 1000) // para cambiar el tiempo del intervalo em minutos, modificar solo el primer 60
 }
 
 // Quit when all windows are closed.
@@ -63,6 +99,20 @@ app.on('ready', async () => {
     }
   }
   createWindow()
+})
+
+// --> EVENTO PARA BUSCAR Y MOSTRAR ACTUALIZACION
+
+ipcMain.on('app_version', (event)=>{
+  event.sender.send('app_version', {version: app.getVersion()}) // ENVIA LA VERSION DEL SOFWARE
+  buscarActualizacion() // BUSCAR ACTUALIZACION
+})
+
+
+// --> EVENTO QUE APLICA ACTUALIZACION DE INTERFACE GRAFICA
+
+ipcMain.on('ok_update', (event) =>{ 
+  autoUpdater.quitAndInstall()
 })
 
 // Exit cleanly on request from parent process in development mode.
