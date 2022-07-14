@@ -5,6 +5,8 @@ import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
 import { autoUpdater } from 'electron-updater'
 import path from 'path'
+const server = require('../backend/app')
+const { PUERTO } = require('../backend/config/parametros')
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
 let win
@@ -114,6 +116,32 @@ ipcMain.on('app_version', (event)=>{
 ipcMain.on('ok_update', (event) =>{ 
   autoUpdater.quitAndInstall()
 })
+
+
+
+
+
+
+
+
+
+
+// -- BACKEND
+    // --> server
+
+server.listen(PUERTO, (error) =>{
+  if(error) return console.log(error)
+  console.log(`[+] Servidor corriendo en puerto ${PUERTO}`)
+})
+
+
+
+
+
+
+
+
+
 
 // Exit cleanly on request from parent process in development mode.
 if (isDevelopment) {
